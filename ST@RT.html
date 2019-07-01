@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  #titel, #subtitel {display: inline}
+</style>
+<script>
+// todo: activiteit weergeven + onderlijnen in actstring
+//        aftelklokken per activiteit en globaal + progressiebalken
+//        actstring aanpassen (editen)
+//        losse timers instellen
+//        pause/resume knop
+var schemas = [
+  { name:"5 km in 8 weken", 
+    weken:8, 
+    dagen:3,
+    acts:[
+        { name:"W1D1", act:"+0++00++00++00+++000"},
+        { name:"W1D2", act:"rust"},
+        { name:"W1D3", act:"+0++00++00+++000+++000"},
+        { name:"W1D4", act:"rust"},
+        { name:"W1D5", act:"+0++00++00+++000+++000"},
+        { name:"W1D6", act:"rust"},
+        { name:"W1D7", act:"rust"},       
+        { name:"W2D1", act:"+0++00++00+++000++++0000"},
+        { name:"W2D2", act:"rust"},
+        { name:"W2D3", act:"++00+++000+++000++++0000"},
+        { name:"W2D4", act:"rust"},
+        { name:"W2D5", act:"+0++00+++000+++000+++000"},
+        { name:"W2D6", act:"rust"},
+        { name:"W2D7", act:"rust"},
+        { name:"W3D1", act:"+0++00+++000+++000++++000"},
+        { name:"W3D2", act:"rust"},
+        { name:"W3D3", act:"++00++0++0++0++0++0++0++0"},
+        { name:"W3D4", act:"rust"},
+        { name:"W3D5", act:"+0++00++++000++++000+++++0"},
+        { name:"W3D6", act:"rust"},
+        { name:"W3D7", act:"rust"},       
+        { name:"W4D1", act:"++00+++00+++++000+++++000+++++00"},
+        { name:"W4D2", act:"rust"},
+        { name:"W4D3", act:"++0+++00++++++00++++++00+++++++00"},
+        { name:"W4D4", act:"rust"},
+        { name:"W4D5", act:"++00++++00+++++00++++++00+++++++00"},
+        { name:"W4D6", act:"rust"},
+        { name:"W4D7", act:"rust"},
+        { name:"W5D1", act:"+++++0++++++00+++++++00++++++++0"},
+        { name:"W5D2", act:"rust"},
+        { name:"W5D3", act:"++++++++0++++++++00++++++++0++++++++0"},
+        { name:"W5D4", act:"rust"},
+        { name:"W5D5", act:"++++++++++00++++++++++00++++++++++++0"},
+        { name:"W5D6", act:"rust"},
+        { name:"W5D7", act:"rust"},
+        { name:"W6D1", act:"+++++++++++++++00+++++++++++++++00"},
+        { name:"W6D2", act:"rust"},
+        { name:"W6D3", act:"++++++++++0++++++++++++0++++++++++++0"},
+        { name:"W6D4", act:"rust"},
+        { name:"W6D5", act:"++++++++++0++++++++++++++++++++0"},
+        { name:"W6D6", act:"rust"},
+        { name:"W6D7", act:"rust"},
+        { name:"W7D1", act:"+++++++++++++++00+++++++++++++++00"},
+        { name:"W7D2", act:"rust"},
+        { name:"W7D3", act:"++++++++++0++++++++++++0++++++++++++0"},
+        { name:"W7D4", act:"rust"},
+        { name:"W7D5", act:"++++++++++0++++++++++++++++++++0"},
+        { name:"W7D6", act:"rust"},
+        { name:"W7D7", act:"rust"},
+        { name:"W8D1", act:"30 minuten joggen met 1 of 2 minuten wandelen naar keuze"},
+        { name:"W8D2", act:"rust"},
+        { name:"W8D3", act:"32 minuten joggen met 1 of 2 minuten wandelen naar keuze"},
+        { name:"W8D4", act:"rust"},
+        { name:"W8D5", act:"30 minuten joggen zonder wandelen"},
+        { name:"W8D6", act:"het zit erop, je hebt het volledige schema afgewerkt"},
+        { name:"W8D7", act:"5km lopen indien je er zin in hebt"}
+    ]
+  }, 
+  { name:"5 km in 10 weken", 
+    weken:10, 
+    dagen:3, 
+    acts:[
+        { name:"W1D1", act:"+0+0++00++00+++000+++000"},
+        { name:"W1D2", act:"rust"},
+        { name:"W1D3", act:"+0++00++00+++000+++000"},
+        { name:"W1D4", act:"rust"},
+        { name:"W1D5", act:"+0++00++00+++000+++000"},
+        { name:"W1D6", act:"rust"},
+        { name:"W1D7", act:"rust"},
+    ]
+  }, 
+  { name:"5 km in 6 weken", 
+    weken:6, 
+    dagen:3,
+    acts:[
+        { name:"W1D1", act:"+0"},
+        { name:"W1D2", act:"rust"},
+        { name:"W1D3", act:"+0"},
+        { name:"W1D4", act:"rust"},
+        { name:"W1D5", act:"+0"},
+        { name:"W1D6", act:"rust"},
+        { name:"W1D7", act:"rust"},
+    ]
+  }, 
+  { name:"5 km in 15 weken 3x/week", weken:15, dagen:3}, 
+  { name:"5 km in 15 weken 2x/week", weken:15, dagen:2}
+];
+
+var selected_schema = 0;
+var selected_week = 0;
+var selected_dag = 0;
+var i = 0;
+// var actString = "+0++00++00+++000+++000";
+var actString = "";
+var actArray = [];
+var act = '';
+var actnr = 1;
+var oldAct = '';
+// var snd = new Audio("beep.wav"); // buffers automatically when created
+// var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+var countDownGTimer = new Date().getTime()+20*60*1000;  // 20mins = 120000ms
+var countDownSTimer = new Date().getTime()+2*60*1000;
+
+function populateSchemas() {
+    var select = document.getElementById("schemas"); 
+    // var options = ["1", "2", "3", "4", "5"]; 
+    select.innerHTML = "";  // remove old options
+
+    for(var i = 0; i < schemas.length; i++) {
+        var opt = schemas[i].name;
+        var el = document.createElement("option");
+        el.textContent = opt;
+        el.value = opt;
+        // el.disabled = true;
+        select.appendChild(el);
+    }
+}
+function populateWeken() {
+    var select = document.getElementById("weken"); 
+    var schema = document.getElementById('schemas').selectedIndex;
+    console.log('schema: ', schema);
+    select.innerHTML = "";  // remove old options
+
+    for(var i = 1; i <= schemas[schema].weken; i++) {
+        var opt = i;
+        var el = document.createElement("option");
+        el.textContent = opt;
+        el.value = opt;
+        // el.disabled = true;
+        select.appendChild(el);
+    }
+  updateActString();
+}
+function drawTekst(tekst){
+  document.getElementById('txt').innerHTML = tekst;
+}
+function drawAct(act){
+  document.getElementById('act').innerHTML = act;
+  document.getElementById('activiteit').innerHTML = act;
+}
+// function setTimer(item, index, arr) {
+//   setTimeout(drawTekst(item));
+// }
+
+function beep() {
+  // var snd = new Audio("beep.wav"); // buffers automatically when created
+  var snd = new Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+  snd.play(); 
+}
+function beeps() {
+  setTimeout(beep, 1000);
+  setTimeout(beep, 2000);
+//   setTimeout(beep, 3000);
+}
+
+function readString() {
+  if (i===0) {
+    //   beep(3);
+      console.log('beep(3)');
+  }
+  if (actString.charAt(i)==='+') {
+    act = 'lopen';
+  } else if (actString.charAt(i)==='0') {
+    act = 'wandelen';
+  } else {
+    act = 'error';
+  }
+  if (oldAct != act) {
+      beep();
+  }
+  console.log(act);
+  var t = setTimeout(readString, 60000);
+  drawTekst(i);
+  drawAct(act);
+  console.log(actString.length);
+  if(i>=actString.length-1) {clearTimeout(t);}
+  i++;
+  oldAct = act;
+}
+function splitString() {
+  actArray = [];
+  var oldc = actString.charAt(0);
+  var a = {};
+  var st = 1;   // stimer variabele
+  actArray[0] = actString.length; // eerste element in actArray is de totale duurtijd van het schema
+  for(x=1; x<=actString.length; x++) {
+    var newc = actString.charAt(x);
+    if(newc===oldc) { // zelfde activiteit => stimer++
+      st++;
+      console.log('=== x:', x, 'st:', st);
+    } else {  // activiteit wissel => stimer in actArray stoppen en resetten
+      a = {}; // create new object
+      a.stimer = st;
+      a.act = oldc;
+      actArray.push(a);
+      // actArray.push(x);
+      console.log('<> x:', x, 'a.stimer:', a.stimer, 'st:', st, 'a:', a, 'actArray:', actArray, x);
+    // document.getElementById("txt").innerHTML = actArray[x].stimer; 
+      st = 1;
+    }
+    console.log('na vgl. x:', x, 'oldc:', oldc, 'newc:', newc, 'st:', st);
+    oldc = newc;
+  }
+  console.log('actString: ', actString);
+  console.log('actArray: ', actArray);
+}
+function readActArray() {
+  var act = actArray[0];
+  var activity = "";
+  console.log('actArray: ', actArray)
+  console.log('actArray.length: ', actArray.length);
+  for(x=1; x<actArray.length; x++) {
+    var countDownSTimer = new Date().getTime()+actArray[x].stimer*60*1000;
+    startSTimer();
+    if(act==='+') {
+      activity = "lopen";
+      act = '0';  // toggle act variabele
+    } else {
+      activity = "wandelen";
+      act = '+';  // toggle act variabele
+    }
+
+    console.log('x: ', x, ' - ', actArray[x].stimer, ' minuten ', activity);
+  }
+}
+function startTime() {
+  var today = new Date();
+  var h = today.getHours();
+  var m = today.getMinutes();
+  var s = today.getSeconds();
+  m = checkTime(m);
+  s = checkTime(s);
+  document.getElementById('txt').innerHTML =
+  h + ":" + m + ":" + s;
+  var t = setTimeout(startTime, 500);
+}
+function checkTime(i) {
+  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+  return i;
+}
+function updateActStringPointer(){
+  var a1 = actString.substr(0, actnr-1);
+  console.log('a1:', a1);
+  var a2 = actString.substr(actnr-1, 1);
+  console.log('a2:', a2);
+  var a3 = actString.substr(actnr, actString.length);
+  console.log('a3:', a3);
+  var actStringPointed = a1 + "<u>" + a2 + "</u>" + a3;
+
+  document.getElementById('activiteiten').innerHTML = actStringPointed;
+}
+function updateSTimerProgressBars(shortminutes, seconds) {
+  var stpr_max = actArray[actnr].stimer*60;
+  var stpr_val = stpr_max-shortminutes*60-seconds;
+  // var stpr_val = shortminutes;
+  // console.log('stpr_val:', stpr_val, 'typeof(stpr_val:', typeof(stpr_val));
+  console.log('stpr_val:', stpr_val, 'stpr_max:', stpr_max);
+  document.getElementById("stimer_progress").max = stpr_max; 
+  document.getElementById("stimer_progress").value = stpr_val; 
+}
+function updateGTimerProgressBars(longminutes, seconds) {
+  var gtpr_max = actArray[0]*60;
+  var gtpr_val = gtpr_max-longminutes*60-seconds;
+  console.log('gtpr_val:', gtpr_val, 'gtpr_max:', gtpr_max);
+  document.getElementById("gtimer_progress").max = gtpr_max; 
+  document.getElementById("gtimer_progress").value = gtpr_val; 
+}
+function startGTimer() {
+  updateActStringPointer();
+  var x = setInterval(function() {
+    var activiteit = '';
+    var now = new Date().getTime();
+    var longdistance = countDownGTimer - now;
+    var shortdistance = countDownSTimer - now;
+    var longminutes = Math.floor((longdistance % (1000 * 60 * 60)) / (1000 * 60));
+    longminutes = checkTime(longminutes);
+    var seconds = Math.floor((longdistance % (1000 * 60)) / 1000);
+    seconds = checkTime(seconds);
+    updateGTimerProgressBars(longminutes, seconds);
+
+    document.getElementById("gtimer").innerHTML = longminutes + ":" + seconds;  
+    if(actArray[actnr].act==='+'){
+      activiteit = "LOPEN";
+    } else {
+      activiteit = "WANDELEN";
+    }
+    document.getElementById("activiteit").innerHTML = activiteit; 
+
+    // count down reaching activity switch
+    var shortminutes = Math.floor((shortdistance % (1000 * 60 * 60)) / (1000 * 60));
+    updateSTimerProgressBars(shortminutes, seconds);
+    shortminutes = checkTime(shortminutes);
+    document.getElementById("stimer").innerHTML = shortminutes + ":" + seconds; 
+    if (shortdistance < 0) {
+      document.getElementById("stimer").innerHTML = "Goed zo!";
+      beep();
+      actnr++;
+      countDownSTimer = new Date().getTime()+actArray[actnr].stimer*60*1000; // reset korte timer
+      updateActStringPointer();
+    } 
+
+    // If the count down is over, write some text 
+    console.log('longdistance:', longdistance);
+    if (longdistance < 0) {
+      clearInterval(x);
+      document.getElementById("activiteit").innerHTML = "Proficiat, je bent er!";
+      enableChoices();
+    }
+  }, 500);
+}
+function startSTimer() {
+  var x = setInterval(function() {
+    var now = new Date().getTime();
+    var distance = countDownSTimer - now;
+    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    document.getElementById("stimer").innerHTML = minutes + "m " + seconds + "s ";   
+
+    // If the count down is over, write some text 
+    if (distance < 0) {
+      clearInterval(x);
+      document.getElementById("stimer").innerHTML = "GOED ZO!";
+      beep();
+      countDownSTimer = new Date().getTime()+actArray[++actnr]*60*1000;
+    }
+  }, 500);
+}
+function updateActString() {
+  var schema = document.getElementById('schemas').selectedIndex;
+  console.log('schema: ',schema);
+  var week = document.getElementById('weken').value;
+  console.log('week: ',week);
+  var dag = document.getElementById('dagen').value;
+  console.log('dag: ',dag);
+  var ndag = (week-1) * 7 + parseInt(dag); // hoeveelste dag in het schema
+  console.log('ndag: ',ndag);
+  actString = schemas[schema].acts[ndag-1].act;
+  console.log('actString: ',actString);
+  document.getElementById('activiteiten').innerText = actString;
+  // document.getElementById('duur').innerText = actString.length + ' minuten';
+  document.getElementById('gtimer').innerText = actString.length + ':00';
+  splitString();
+}
+
+function populate() {
+  populateSchemas();
+  populateWeken();
+  updateActString();
+}
+function start(){
+  disableChoices();
+  beeps();
+  // readString();
+  // readActArray();
+  // startTime();
+  countDownGTimer = new Date().getTime()+actArray[0]*60*1000; // reset globale timer
+  countDownSTimer = new Date().getTime()+actArray[1].stimer*60*1000; // reset korte timer
+  document.getElementById("stimer_progress").max=100;
+  document.getElementById("stimer_progress").value=10;
+  startGTimer();
+  // startSTimer();
+}
+function disableChoices() {
+  document.getElementById("schemas").disabled=true;
+  document.getElementById("weken").disabled=true;
+  document.getElementById("dagen").disabled=true;
+}
+function enableChoices() {
+  document.getElementById("schemas").disabled=false;
+  document.getElementById("weken").disabled=false;
+  document.getElementById("dagen").disabled=false;
+}
+</script>
+</head>
+
+<!--<body onload="startTime()">-->
+<!-- <body onload="readString('+0+0++00++00+++000+++000')"> -->
+<body onload="populate()">   
+    <div>
+      <h1 id="titel">ST@RT</h1>
+      <h5 id="subtitel">Start To Run Timer</h5>
+    </div>
+    <br>
+    <div id="keuzes">
+        <label>Schema</label>
+        <select id="schemas" onchange="populateWeken()">
+        </select>
+        <label>Week</label>
+        <select id="weken" onchange="updateActString()">
+        </select>
+        <label>Dag</label>
+        <select id="dagen" onchange="updateActString()">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+            <option>6</option>
+            <option>7</option>
+        </select>
+    </div>
+    <br>
+    <div>
+      <h2 id="activiteiten"><i>nothing</i></h2>
+      <label>+ = lopen</label>
+      <label>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</label>
+      <label>0 = wandelen</label>
+      <!-- <h3 id="duur"><i>duur</i></h3> -->
+    </div>
+    <div><h3 id="gtimer"><i>globale timer</i></h3></div>
+    <div><progress id="gtimer_progress" value="22" max="100"></progress></div>
+    <div><h2 id="activiteit"><i>Kies een schema en druk START om te beginnen</i></h2></div>
+    <div><h2 id="stimer"><i>00:00</i></h2></div>
+    <div><progress id="stimer_progress" value="70" max="100"></progress></div>
+
+
+  <div id="txt"></div>
+  <div id="act"></div>  
+  <br>
+  <button onclick="start()">Start</button>
+  <!-- <button onclick="disableChoices()">disable</button>
+  <button onclick="enableChoices()">enable</button> -->
+</body>
+</html>
